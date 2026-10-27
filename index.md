@@ -22,5 +22,10 @@ title: AlgoLovers
 
 - [개인정보처리방침](https://algolovers.github.io/ddakpul/privacy)
 
+## 하루 15분 연산 학습지
+초등 사칙연산 무료 PDF 학습지 (정답지 포함).
+
+- [학습지 목록](worksheets/)
+
 ---
 문의: sangchul0714@gmail.com
