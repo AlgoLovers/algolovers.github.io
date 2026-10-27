@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://algolovers.github.io/sitemap.xml
