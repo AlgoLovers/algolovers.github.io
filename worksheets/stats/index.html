@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>방문·다운로드 통계 · 하루 15분 연산</title>
+<link rel="icon" href="../images/icon-48.png">
+<link rel="stylesheet" href="../style.css">
+<style>
+  td.n{text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+  th.n{text-align:right}
+  tr.sum td{font-weight:800;background:var(--bg)}
+  .muted{color:var(--sub);font-weight:400}
+  .err{color:var(--acc)}
+  .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}
+  .tile{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+  .tile b{display:block;font-size:28px;font-variant-numeric:tabular-nums}
+  .tile span{font-size:13px;color:var(--sub)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="site"><a href="../">하루 15분 연산</a><span>통계 (나만 보는 페이지)</span></header>
+  <h1>방문·다운로드 통계</h1>
+  <p class="lead">GoatCounter에서 숫자를 가져와 보여 줘요. 숫자는 최대 4시간 늦게 반영돼요. 이 페이지는 검색에 나오지 않고, 어디에도 링크하지 않았어요.</p>
+
+  <div class="tiles">
+    <div class="tile"><span>사이트 전체 방문</span><b id="t-total">…</b></div>
+    <div class="tile"><span>문제지 받기</span><b id="t-prob">…</b></div>
+    <div class="tile"><span>정답지 받기</span><b id="t-ans">…</b></div>
+  </div>
+
+  <div class="scroll">
+  <table>
+    <thead><tr><th>글</th><th class="n">방문</th><th class="n">문제지 받기</th><th class="n">정답지 받기</th></tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+  </div>
+  <p id="status" class="muted" style="margin-top:12px"></p>
+  <p class="muted">자세한 유입 경로(인스타그램·구글 등)는 <a href="https://haru15.goatcounter.com" target="_blank" rel="noopener">GoatCounter 대시보드</a>에서 볼 수 있어요.</p>
+  <footer>집계 기준: GoatCounter를 붙인 2026년 11월 22일부터. 다운로드는 버튼을 누른 횟수예요.</footer>
+</div>
+<script>
+const SITE = "https://haru15.goatcounter.com/counter/";
+const POSTS = [
+  {name: "학습지 목록", path: "/worksheets/", files: null},
+  {name: "1·2주차", path: "/worksheets/posts/arith-2weeks-01/", files: "arith-2weeks-01"},
+  {name: "3주차", path: "/worksheets/posts/arith-week3/", files: "arith-week3"},
+  {name: "4주차", path: "/worksheets/posts/arith-week4/", files: "arith-week4"},
+  {name: "5주차", path: "/worksheets/posts/arith-week5/", files: "arith-week5"},
+  {name: "6주차", path: "/worksheets/posts/arith-week6/", files: "arith-week6"},
+];
+let blocked = false;
+async function count(path) {
+  try {
+    const r = await fetch(SITE + encodeURIComponent(path) + ".json");
+    if (r.status === 404) return 0;                       // 아직 한 번도 기록되지 않음
+    if (!r.ok) { blocked = true; return null; }
+    const j = await r.json();
+    return parseInt(String(j.count).replace(/[^0-9]/g, ""), 10) || 0;
+  } catch (e) { blocked = true; return null; }
+}
+const fmt = v => v === null ? "?" : v.toLocaleString("ko-KR");
+(async () => {
+  const tbody = document.getElementById("rows");
+  let sumV = 0, sumP = 0, sumA = 0;
+  for (const p of [...POSTS].reverse()) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td><a href="${p.path.replace('/worksheets/', '../')}">${p.name}</a></td><td class="n">…</td><td class="n">…</td><td class="n">…</td>`;
+    tbody.appendChild(tr);
+    const [v, pr, an] = await Promise.all([
+      count(p.path),
+      p.files ? count(`download/${p.files}-problems`) : Promise.resolve(null),
+      p.files ? count(`download/${p.files}-answers`) : Promise.resolve(null),
+    ]);
+    const c = tr.querySelectorAll("td.n");
+    c[0].textContent = fmt(v);
+    c[1].textContent = p.files ? fmt(pr) : "–";
+    c[2].textContent = p.files ? fmt(an) : "–";
+    sumV += v || 0; sumP += pr || 0; sumA += an || 0;
+  }
+  const s = document.createElement("tr"); s.className = "sum";
+  s.innerHTML = `<td>합계</td><td class="n">${fmt(sumV)}</td><td class="n">${fmt(sumP)}</td><td class="n">${fmt(sumA)}</td>`;
+  tbody.appendChild(s);
+  const total = await count("TOTAL");
+  document.getElementById("t-total").textContent = fmt(total);
+  document.getElementById("t-prob").textContent = fmt(sumP);
+  document.getElementById("t-ans").textContent = fmt(sumA);
+  const st = document.getElementById("status");
+  if (blocked) { st.className = "err"; st.textContent = "일부 숫자를 가져오지 못했어요(?). GoatCounter 설정에서 'Allow adding visitor counts on your website'가 켜져 있는지 확인해 주세요. 광고 차단 프로그램이 막고 있을 수도 있어요."; }
+  else st.textContent = "불러온 시각: " + new Date().toLocaleString("ko-KR");
+})();
+</script>
+</body>
+</html>
