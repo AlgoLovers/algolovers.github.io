@@ -33,12 +33,12 @@
 
   <div class="scroll">
   <table>
-    <thead><tr><th>글</th><th class="n">방문</th><th class="n">문제지 받기</th><th class="n">정답지 받기</th></tr></thead>
+    <thead><tr><th>글</th><th class="n">방문</th><th class="n">문제지 받기</th><th class="n">정답지 받기</th><th class="n">인스타 버튼</th></tr></thead>
     <tbody id="rows"></tbody>
   </table>
   </div>
   <p id="status" class="muted" style="margin-top:12px"></p>
-  <p class="muted">자세한 유입 경로(인스타그램·구글 등)는 <a href="https://haru15.goatcounter.com" target="_blank" rel="noopener">GoatCounter 대시보드</a>에서 볼 수 있어요.</p>
+  <p class="muted">"인스타 버튼"은 블로그 글의 "@haru15.math 팔로우" 버튼을 누른 횟수예요. 자세한 유입 경로(인스타그램·구글 등)는 <a href="https://haru15.goatcounter.com" target="_blank" rel="noopener">GoatCounter 대시보드</a>에서 볼 수 있어요.</p>
   <footer>집계 기준: GoatCounter를 붙인 2026년 11월 22일부터. 다운로드는 버튼을 누른 횟수예요.</footer>
 </div>
 <script>
@@ -64,24 +64,27 @@ async function count(path) {
 const fmt = v => v === null ? "?" : v.toLocaleString("ko-KR");
 (async () => {
   const tbody = document.getElementById("rows");
-  let sumV = 0, sumP = 0, sumA = 0;
+  let sumV = 0, sumP = 0, sumA = 0, sumI = 0;
   for (const p of [...POSTS].reverse()) {
     const tr = document.createElement("tr");
-    tr.innerHTML = `<td><a href="${p.path.replace('/worksheets/', '../')}">${p.name}</a></td><td class="n">…</td><td class="n">…</td><td class="n">…</td>`;
+    tr.innerHTML = `<td><a href="${p.path.replace('/worksheets/', '../')}">${p.name}</a></td><td class="n">…</td><td class="n">…</td><td class="n">…</td><td class="n">…</td>`;
     tbody.appendChild(tr);
-    const [v, pr, an] = await Promise.all([
+    const tag = p.files || "list";
+    const [v, pr, an, ig] = await Promise.all([
       count(p.path),
       p.files ? count(`download/${p.files}-problems`) : Promise.resolve(null),
       p.files ? count(`download/${p.files}-answers`) : Promise.resolve(null),
+      count(`out/instagram-${tag}`),
     ]);
     const c = tr.querySelectorAll("td.n");
     c[0].textContent = fmt(v);
     c[1].textContent = p.files ? fmt(pr) : "–";
     c[2].textContent = p.files ? fmt(an) : "–";
+    c[3].textContent = fmt(ig); sumI += ig || 0;
     sumV += v || 0; sumP += pr || 0; sumA += an || 0;
   }
   const s = document.createElement("tr"); s.className = "sum";
-  s.innerHTML = `<td>합계</td><td class="n">${fmt(sumV)}</td><td class="n">${fmt(sumP)}</td><td class="n">${fmt(sumA)}</td>`;
+  s.innerHTML = `<td>합계</td><td class="n">${fmt(sumV)}</td><td class="n">${fmt(sumP)}</td><td class="n">${fmt(sumA)}</td><td class="n">${fmt(sumI)}</td>`;
   tbody.appendChild(s);
   const total = await count("TOTAL");
   document.getElementById("t-total").textContent = fmt(total);

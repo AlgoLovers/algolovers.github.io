@@ -1,0 +1,33 @@
+name: IndexNow (검색엔진에 새 글 알림)
+on:
+  workflow_run:
+    workflows: ["pages build and deployment"]
+    types: [completed]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  ping:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 사이트맵의 주소를 IndexNow에 제출 (Bing·네이버 등)
+        run: |
+          python3 - <<'PY'
+          import json, re, urllib.request
+          urls = re.findall(r"<loc>(.*?)</loc>", open("sitemap.xml", encoding="utf-8").read())
+          body = json.dumps({
+              "host": "algolovers.github.io",
+              "key": "89bd39544f03568140e6d5cef1475266",
+              "keyLocation": "https://algolovers.github.io/89bd39544f03568140e6d5cef1475266.txt",
+              "urlList": urls,
+          }).encode()
+          for ep in ["https://api.indexnow.org/indexnow", "https://searchadvisor.naver.com/indexnow"]:
+              req = urllib.request.Request(ep, data=body, headers={"Content-Type": "application/json; charset=utf-8"})
+              try:
+                  with urllib.request.urlopen(req, timeout=30) as r:
+                      print(ep, r.status, len(urls), "개 주소 제출")
+              except Exception as e:
+                  print(ep, "실패:", e)
+          PY
